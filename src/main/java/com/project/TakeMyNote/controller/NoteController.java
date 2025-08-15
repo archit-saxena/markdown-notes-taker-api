@@ -35,6 +35,9 @@ public class NoteController {
     // 1) Grammar check (text)
     @PostMapping(value = "/grammar", consumes = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<?> checkGrammarText(@RequestBody String markdown) throws IOException {
+        if(markdown == null || markdown.isBlank()){
+            return ResponseEntity.badRequest().body(Map.of("error", "Markdown text cannot be empty"));
+        }
         var suggestions = grammarService.check(markdown);
         return ResponseEntity.ok(suggestions);
     }
@@ -42,6 +45,9 @@ public class NoteController {
     // 1b) Grammar check - uploaded .md file
     @PostMapping(value = "/grammar-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> checkGrammarFile(@RequestParam("file") MultipartFile file) throws IOException {
+        if(file.isEmpty() || !file.getOriginalFilename().endsWith(".md") ) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Please upload a valid .md file"));
+        }
         String md = new String(file.getBytes(), StandardCharsets.UTF_8);
         var suggestions = grammarService.check(md);
         return ResponseEntity.ok(suggestions);
@@ -69,24 +75,48 @@ public class NoteController {
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> saveNote(@RequestBody SaveNoteRequest req) throws IOException {
-        NoteMetaData saved = storage.saveMarkdown(req.title, req.markdown, null);
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", saved.getId()));
+        try {
+            NoteMetaData saved = storage.saveMarkdown(req.title, req.markdown, null);
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", saved.getId()));
+        }
+        catch (FileNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Note not found"));
+        }
+        catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     // 2b) Upload an .md file
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
+        if (file.isEmpty() || !file.getOriginalFilename().endsWith(".md")) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Please upload a valid .md file"));
+        }
         String md = new String(file.getBytes(), StandardCharsets.UTF_8);
         String original = file.getOriginalFilename();
         String title = original != null ? original : "";
-        NoteMetaData saved = storage.saveMarkdown(title, md, original);
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", saved.getId()));
+        try {
+            NoteMetaData saved = storage.saveMarkdown(title, md, original);
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", saved.getId()));
+        }
+        catch (FileNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Note not found"));
+        }
+        catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     // 3) List notes
     @GetMapping
     public ResponseEntity<?> list() throws IOException {
         List<NoteMetaData> list = storage.listNotes();
+        if (list.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
         return ResponseEntity.ok(list);
     }
 
@@ -119,17 +149,10 @@ public class NoteController {
     public ResponseEntity<?> deleteNote(@PathVariable String id) throws IOException {
         boolean deleted = storage.deleteNote(id);
         if (deleted) {
-            return ResponseEntity.noContent().build(); // 204 No Content
+            return ResponseEntity.ok("Note Deleted");
         } else {
             return ResponseEntity.notFound().build();
         }
     }
-
-    @GetMapping("/filenames")
-    public ResponseEntity<?> listMarkdownFilenames() throws IOException {
-        List<String> filenames = storage.listMarkdownFilenames();
-        return ResponseEntity.ok(filenames);
-    }
-
 }
 

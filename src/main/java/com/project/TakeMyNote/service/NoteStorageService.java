@@ -47,7 +47,7 @@ public class NoteStorageService {
             meta.setCreatedAt(now);
             meta.setUpdatedAt(now);
 
-            // write metadata
+            // write metadata'
             Files.writeString(metaPath(id), mapper.writeValueAsString(meta), StandardOpenOption.CREATE_NEW);
             return meta;
         } finally {
@@ -116,17 +116,5 @@ public class NoteStorageService {
 
         return true;
     }
-
-    public List<String> listMarkdownFilenames() throws IOException {
-        try (Stream<Path> stream = Files.list(root)) {
-            return stream
-                    .filter(p -> Files.isRegularFile(p))
-                    .filter(p -> p.getFileName().toString().endsWith(".md"))
-                    .map(p -> p.getFileName().toString())
-                    .sorted()
-                    .collect(Collectors.toList());
-        }
-    }
-
 }
 

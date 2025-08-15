@@ -109,7 +109,7 @@ By default, notes are stored in `./data/notes/`.
 
 ## 📜 License
 
-This project is open-source under the [MIT License](LICENSE).
+This project is open-source under the [MIT License](/LICENSE).
 
 ---
 

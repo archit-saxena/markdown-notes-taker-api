@@ -96,7 +96,8 @@ By default, notes are stored in `./data/notes/`.
 | DELETE | `/api/notes/{id}`              | Delete note                       |
 | POST   | `/api/notes/grammar`           | Grammar check from text           |
 | POST   | `/api/notes/grammar-file`      | Grammar check from uploaded file  |
-
+| GET    | `/api/notes/{id}/grammar`      | Grammar check from the note id    |
+| GET    | `/api/notes/filenames`         | Lists all the notes present       |
 ---
 
 ## 🛡 Security Notes

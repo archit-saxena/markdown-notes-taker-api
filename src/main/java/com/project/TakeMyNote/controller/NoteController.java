@@ -39,12 +39,25 @@ public class NoteController {
         return ResponseEntity.ok(suggestions);
     }
 
-
     // 1b) Grammar check - uploaded .md file
     @PostMapping(value = "/grammar-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> checkGrammarFile(@RequestParam("file") MultipartFile file) throws IOException {
         String md = new String(file.getBytes(), StandardCharsets.UTF_8);
         var suggestions = grammarService.check(md);
+        return ResponseEntity.ok(suggestions);
+    }
+
+    @GetMapping("/{id}/grammar")
+    public ResponseEntity<?> grammarCheckNoteById(@PathVariable String id) throws IOException {
+        // read the file from disk
+        Optional<String> raw = storage.readRaw(id);
+        if (raw.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Note not found"));
+        }
+
+        // run grammar check
+        var suggestions = grammarService.check(raw.get());
         return ResponseEntity.ok(suggestions);
     }
 
@@ -111,5 +124,12 @@ public class NoteController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/filenames")
+    public ResponseEntity<?> listMarkdownFilenames() throws IOException {
+        List<String> filenames = storage.listMarkdownFilenames();
+        return ResponseEntity.ok(filenames);
+    }
+
 }
 

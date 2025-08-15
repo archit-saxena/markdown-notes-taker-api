@@ -116,5 +116,17 @@ public class NoteStorageService {
 
         return true;
     }
+
+    public List<String> listMarkdownFilenames() throws IOException {
+        try (Stream<Path> stream = Files.list(root)) {
+            return stream
+                    .filter(p -> Files.isRegularFile(p))
+                    .filter(p -> p.getFileName().toString().endsWith(".md"))
+                    .map(p -> p.getFileName().toString())
+                    .sorted()
+                    .collect(Collectors.toList());
+        }
+    }
+
 }
 
